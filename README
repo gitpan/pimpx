@@ -1,0 +1,17 @@
+PiMPx 0.5.3
+============================
+
+PiMPx is the Perl-inclusive Macro Processor.
+It simplifies the management of bigger projects in Perl and can be used in other languages
+that use lines beginning with "#" as comments.
+
+To install:
+
+$ ./configure
+$ make
+$ su root
+# make install
+
+(c) 2001-2002 Ask Solem Hoel <ask@unixmonks.net>
+
+
