@@ -1,0 +1,60 @@
+# ###
+# Makefile - makefile for PiMP
+# (c) 2001 - Ask Solem Hoel <ask@unixmonks.net>
+# All rights reserved.
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License version 2
+#   as published by the Free Software Foundation.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#####
+
+#%ifdef PERL
+   #%print PERL=%{PERL}
+#%endif
+#%ifdef PERLFLAGS
+  #%print PERLFLAGS=%{PERLFLAGS}
+#%endif
+#%ifdef PREFIX
+  #%print PREFIX=%{PREFIX}
+#%endif
+#%ifdef DEBUG
+  #%print DEBUG=%{DEBUG}
+#%endif
+
+VERSION=0.5.2
+PIMPTEMPLATE=template/pimpx.pp
+PIMP=./pimpx
+PIMPFLAGS=-Iinclude/ -DVERSION=\"$(VERSION)\" -DDEBUG=$(DEBUG)
+
+all: template/PIMPX
+
+template/PIMPX:
+	$(PERL) $(PERLFLAGS) $(PIMP) $(PIMPFLAGS) $(PIMPTEMPLATE) \
+		-DPERL=\"$(PERL)\" \
+		-DPERLFLAGS=\"$(PERLFLAGS)\" \
+		-Otemplate/PIMPX
+
+install: all
+	cp -f template/PIMPX $(PREFIX)/bin/pimpx
+	chmod 755 $(PREFIX)/bin/pimpx
+
+uninstall:
+	rm -f $(PREFIX)/bin/pimpx
+
+reinstall: clean uninstall all install
+
+clean:
+	rm -f template/PIMPX
+
+distclean: clean
+	rm -f Makefile
+	rm -f config.cache

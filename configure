@@ -1,0 +1,82 @@
+#!/bin/sh
+# ###
+# configure - configuration script for PiMPx
+# (c) 2001 - Ask Solem Hoel <ask@unixmonks.net>
+# All rights reserved.
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License version 2
+#   as published by the Free Software Foundation.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#####
+
+if [ -f config.defs ]; then
+	. ./config.defs
+fi
+if [ -f config.cache ]; then
+	. ./config.cache
+fi
+
+for arg in $*
+do
+	case $arg in
+		--prefix*)
+			prefix=`echo $arg | cut -d= -f2`
+			if [ -d "$prefix" ]; then
+				PREFIX=$prefix
+			fi
+		;;
+		--enable-debug)
+			DEBUG=1
+		;;
+		--perl=*)
+			perl=`echo $arg | cut -d= -f2`
+			if [ -x "$perl" ]; then
+				PERL=$perl
+			fi
+		;;
+		--perlflags=*)
+			perlflags=`echo $arg | cut -d= -f2`
+			if [ "$perlflags" != "" ]; then
+				PERLFLAGS=$perlflags
+			fi
+
+			
+	esac
+done
+
+echo "PiMPx - configure script. type \`./configure --help' for help";
+echo "perl.... $PERL";
+echo "perlflags.... $PERLFLAGS";
+echo "prefix..... $PREFIX";
+if [ ! -z "$DEBUG" ]; then
+	if [ "$DEBUG" != "0" ]; then
+		echo "debug enabled.... ";
+	fi
+fi
+echo
+echo "writing cache..."
+cat <<EOF >config.cache
+PREFIX="$PREFIX"
+PERL="$PERL"
+PERLFLAGS="$PERLFLAGS"
+DEBUG="$DEBUG"
+EOF
+
+echo "writing Makefile..."
+$PERL ./pimpx Makefile.tmpl \
+	-DPERL=\"$PERL\" \
+	-DPERLFLAGS=\"$PERLFLAGS\" \
+	-DPREFIX=\"$PREFIX\" \
+	-DDEBUG=\"$DEBUG\" \
+	-OMakefile
+
+echo "Configure now done, type \`make install' to complete installation";

@@ -1,0 +1,167 @@
+#!/usr/bin/perl
+#% ifdef PERL
+#%   print #!%PERL %PERLFLAGS
+#% endif
+# ###
+# PiMPx - the Perl-inclusive Macro Processor
+# (c) 2001 - Ask Solem Hoel <ask@unixmonks.net>
+# All rights reserved.
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License version 2 
+#   as published by the Free Software Foundation.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#####
+
+package main;
+
+#% ifdef GENPP
+  require "include/pimpx.ph";
+  use lib 'include/';
+  use Version;
+#% endif
+use strict;
+use vars qw(%cmds $me $D %vars $VERSION $BUILD);
+
+# ### basename of myself.
+$me = $0;
+$me =~ s%.*/%%;
+
+#% ifdef DEBUG
+#%   print $D = 1;
+#% endif
+
+# ### create version object.
+#% ifdef VERSION
+#%   print $VERSION = "%{VERSION}";
+#% else
+$VERSION = "0.0.0";
+#% endif
+my $version = Version->new($VERSION);
+
+# ### 
+# commands are references to functions,   
+# unless ifdef, ifndef and undef which are done when parsing.
+%cmds = (
+    "include"   => \&_include,
+    "require"   => \&_include,
+    "define"    => \&_define,
+    "print"     => \&_print,
+    "inc"       => \&_inc,
+    "dec"       => \&_dec,
+    "exit"      => \&_exit,
+    "die"		=> \&_die,
+    "addinc"	=> \&_addinc,
+);
+
+# ###
+# get filename from command arguments,
+# and run the preprocessor.
+my $file = _parseopts(@ARGV);
+my $ret  = preprocess($file);
+exit 0;
+
+# ########################################################################################### #
+
+# ##### void _version(void)
+# print version information.
+#
+sub _version {
+	printf STDERR "PiMPx - the Perl-inclusive Macro-Processor %s\n", $version->extended();
+	print  STDERR "Copyright 2001-2002 Ask Solem Hoel <ask\@unixmonks.net>\n";
+}
+
+# ##### void _usage(void)
+# print usage information
+#
+sub _usage {
+	print STDERR "Usage: $me {[-I/include|-Dvar|-Dvar=val|--debug]] - {filename}|[-h|-V]}\n";
+}
+
+# #### char _parseopts(array argv)
+# parse command line arguments and return the filename given.
+#
+sub _parseopts {
+	my @argv = @_;
+	my $file; # filename to return
+	while($_ = shift @argv) {
+		if	(s/^-$//) {
+			# ### 
+			# if we get a "-" the rest of the arguments 
+			# is the filename to process.
+			return "@argv" if @argv;
+		}
+		elsif	(s/^-O//) {
+			# ###
+			# -Ofilename: redirect standard output to <filename>.
+			#
+			die "*** Missing filename as argument to -O\n"
+			  unless $_;
+			open OUTPUT, ">$_"
+			  or die "*** $me: Error: Couldn't open $_: $!\n";
+			*STDOUT=*OUTPUT;
+		}
+		elsif	(s/^(--version|-V)//) {
+				# print version information
+				_version();
+				exit;
+		}
+		elsif	(s/^(--help|-h)//) {
+				# print version and help
+				_version();
+				_usage();
+				exit;
+		}
+		elsif	(s/^--debug//) {
+				# print debugging information at runtime.
+				$D++;
+				print STDERR "*** Debug option set\n";
+		}
+		elsif	(s/^-I//) {
+				# ### 
+				# -Ipath: add path to @INC
+				#
+				die "*** Missing path as argument to -I\n" unless $_;
+				print STDERR "*** New include path: $_\n" if $D;
+				push @INC;
+		}
+		elsif	(s/^-D//) {
+				# ###
+				# -Dvar(=value)?: Define value to variable.
+				# if no value is given, variable is set to true (1).
+				#
+				if(/^(.+?)=(.+?)?$/) {
+					next unless $2; # must have value if "=" character found.
+					print STDERR "*** Variable $1 set to $2\n" if $D;
+					eval "\$vars{\"$1\"} = $2";
+					print "$@\n" if $@; # print eval errors, if any.
+				}
+				else {
+					print STDERR "*** Variable $_ defined\n" if $D;
+					print "$@\n" if $@;
+					$vars{$_} = 1;
+				}
+		}
+		elsif	(not /^-/) {
+				# ### 
+				# this argument is our file if no dash character
+				# is found at the start.
+				$file = $_;
+		}
+	};
+	unless($file) {
+		# ### print some help if no file given.
+		_version();
+		_usage();	
+		END; exit;
+	}
+	return $file;
+}

@@ -1,0 +1,4 @@
+PREFIX=/usr/local
+PERL=/usr/bin/perl
+PERLFLAGS=
+DEBUG=
